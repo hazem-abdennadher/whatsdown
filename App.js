@@ -1,15 +1,96 @@
-import { StatusBar } from "expo-status-bar";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { useAssets } from "expo-asset";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import SignIn from "./screens/sign-in";
+import ContextWrapper, { useGlobalContext } from "./context/context-wrapper";
+import Profile from "./screens/profile";
 
-export default function App() {
+const stack = createStackNavigator();
+function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const {
+    theme: { colors },
+  } = useGlobalContext();
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setLoading(false);
+      if (user) {
+        setCurrentUser(user);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+  if (loading) return <Text>Loading...</Text>;
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
+    <NavigationContainer>
+      {!currentUser ? (
+        <stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <stack.Screen name="SignIn" component={SignIn} />
+        </stack.Navigator>
+      ) : (
+        <stack.Navigator
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          {!currentUser.displayName && (
+            <stack.Screen
+              name="Profile"
+              options={{
+                headerStyle: {
+                  backgroundColor: colors.foreground,
+                  shadowOpacity: 0,
+                  elevation: 0,
+                },
+                headerTintColor: colors.white,
+              }}
+              component={Profile}
+            />
+          )}
+          <stack.Screen
+            name="Home"
+            options={{ title: "Whatsdown" }}
+            component={Home}
+          />
+        </stack.Navigator>
+      )}
+    </NavigationContainer>
+  );
+}
+
+function Home() {
+  return (
+    <View>
+      <Text>Home </Text>
     </View>
   );
 }
+
+function Main() {
+  const [assets] = useAssets([
+    require("./assets/chatbg.png"),
+    require("./assets/welcome-img.png"),
+    require("./assets/user-icon.png"),
+  ]);
+  if (!assets) {
+    return <Text>Loading....</Text>;
+  }
+  return (
+    <ContextWrapper>
+      <App />
+    </ContextWrapper>
+  );
+}
+export default Main;
 
 const styles = StyleSheet.create({
   container: {
