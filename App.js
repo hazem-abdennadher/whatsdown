@@ -8,6 +8,10 @@ import { createStackNavigator } from "@react-navigation/stack";
 import SignIn from "./screens/sign-in";
 import ContextWrapper, { useGlobalContext } from "./context/context-wrapper";
 import Profile from "./screens/profile";
+import Home from "./screens/home";
+import Contacts from "./screens/contacts";
+import Chat from "./screens/chat";
+import ChatHeader from "./components/chat-header";
 
 const stack = createStackNavigator();
 function App() {
@@ -39,7 +43,7 @@ function App() {
       ) : (
         <stack.Navigator
           screenOptions={{
-            headerShown: false,
+            headerShown: true,
           }}
         >
           {!currentUser.displayName && (
@@ -52,26 +56,56 @@ function App() {
                   elevation: 0,
                 },
                 headerTintColor: colors.white,
+                headerShown: true,
               }}
               component={Profile}
             />
           )}
           <stack.Screen
             name="Home"
-            options={{ title: "Whatsdown" }}
+            options={{
+              title: "Whatsdown",
+              headerStyle: {
+                backgroundColor: colors.foreground,
+                shadowOpacity: 0,
+                elevation: 0,
+              },
+              headerTintColor: colors.white,
+              headerShown: true,
+            }}
             component={Home}
+          />
+          <stack.Screen
+            name="Contacts"
+            options={{
+              title: "Select Contact",
+              headerStyle: {
+                backgroundColor: colors.foreground,
+                shadowOpacity: 0,
+                elevation: 0,
+              },
+              headerTintColor: colors.white,
+              headerShown: true,
+            }}
+            component={Contacts}
+          />
+          <stack.Screen
+            name="chat"
+            options={{
+              headerTitle: (props) => <ChatHeader {...props} />,
+              headerStyle: {
+                backgroundColor: colors.foreground,
+                shadowOpacity: 0,
+                elevation: 0,
+              },
+              headerTintColor: colors.white,
+              headerShown: true,
+            }}
+            component={Chat}
           />
         </stack.Navigator>
       )}
     </NavigationContainer>
-  );
-}
-
-function Home() {
-  return (
-    <View>
-      <Text>Home </Text>
-    </View>
   );
 }
 
