@@ -17,7 +17,7 @@ export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [mode, setMode] = useState("signup");
+  const [mode, setMode] = useState("signin");
 
   async function handlePress() {
     try {
