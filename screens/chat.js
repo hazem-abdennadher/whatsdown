@@ -197,7 +197,7 @@ export default function Chat() {
                     {
                       text: text.trim(),
                       user,
-                      _id: messageIdGenerator(),
+                      _id: nanoid(),
                     },
                     true
                   );

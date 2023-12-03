@@ -12,6 +12,7 @@ import Home from "./screens/home";
 import Contacts from "./screens/contacts";
 import Chat from "./screens/chat";
 import ChatHeader from "./components/chat-header";
+import ChatScreen from "./screens/chat-screen";
 
 const stack = createStackNavigator();
 function App() {
@@ -101,7 +102,7 @@ function App() {
               headerTintColor: colors.white,
               headerShown: true,
             }}
-            component={Chat}
+            component={ChatScreen}
           />
         </stack.Navigator>
       )}
