@@ -93,14 +93,7 @@ function App() {
           <stack.Screen
             name="chat"
             options={{
-              headerTitle: (props) => <ChatHeader {...props} />,
-              headerStyle: {
-                backgroundColor: colors.foreground,
-                shadowOpacity: 0,
-                elevation: 0,
-              },
-              headerTintColor: colors.white,
-              headerShown: true,
+              headerShown: false,
             }}
             component={ChatScreen}
           />

@@ -13,7 +13,36 @@ export async function askForPermission() {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   return status;
 }
+export async function uploadDocument(uri, path, fName) {
+  console.log(" uploading document", uri);
+  const blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+      resolve(xhr.response);
+    };
+    xhr.onerror = function (e) {
+      console.log(e);
+      reject(new TypeError("Network request failed"));
+    };
+    xhr.responseType = "blob";
+    xhr.open("GET", uri, true);
+    xhr.send(null);
+  });
 
+  const fileName = fName || nanoid();
+  const documentRef = ref(storage, `${path}/${fileName}`); // Adjust the file extension or type as needed
+
+  const snapshot = await uploadBytes(documentRef, blob, {
+    contentType: "application/pdf", // Set the appropriate content type for your document
+    // contentType: "application/msword", for example, for a Word document
+  });
+
+  blob.close();
+
+  const url = await getDownloadURL(snapshot.ref);
+
+  return { url, fileName };
+}
 export async function uploadImage(uri, path, fName) {
   // Why are we using XMLHttpRequest? See:
   // https://github.com/expo/expo/issues/2402#issuecomment-443726662

@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import Chats from "./chats";
 const Tab = createMaterialTopTabNavigator();
-
+import Profile from "./profile";
 export default function Home() {
   const {
     theme: { colors },
@@ -42,6 +42,7 @@ export default function Home() {
     >
       <Tab.Screen name="photo" component={Photo} />
       <Tab.Screen name="chats" component={Chats} />
+      <Tab.Screen name="profile" component={Profile} />
     </Tab.Navigator>
   );
 }

@@ -22,11 +22,11 @@ export default function Profile() {
     theme: { colors },
   } = useGlobalContext();
 
-  const [displayName, setDisplayName] = useState("");
-  const [selectedImage, setSelectedImage] = useState(null);
+  const user = auth.currentUser;
+  const [displayName, setDisplayName] = useState(user.displayName);
+  const [selectedImage, setSelectedImage] = useState(user.photoURL);
   const [permissionStatus, setPermissionStatus] = useState(null); // ["granted", "denied", "undetermined"
   const handlePress = async () => {
-    const user = auth.currentUser;
     let photoURL = null;
     if (selectedImage) {
       const { url } = await uploadImage(
@@ -51,6 +51,7 @@ export default function Profile() {
         uid: user.uid,
       }),
     ]);
+    alert("updated");
     navigation.navigate("Home");
   };
   const hanldeProfilePicture = async () => {
@@ -147,8 +148,8 @@ export default function Profile() {
           }}
         >
           <Button
-            title="Next"
-            color={colors.secondary}
+            title="Save"
+            color={colors.primary}
             disabled={!displayName}
             onPress={handlePress}
           />

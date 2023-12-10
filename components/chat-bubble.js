@@ -1,15 +1,22 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Linking,
+} from "react-native";
 import ImageView from "react-native-image-viewing";
+import { Feather } from "@expo/vector-icons"; // Import the Feather icon set from react-native-vector-icons
 
-const ChatBubble = ({ message, isMyMessage }) => {
+const ChatBubble = ({ message, isMyMessage, searchQuery }) => {
   const bubbleStyle = isMyMessage ? styles.myMessage : styles.otherMessage;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImageView, setSeletedImageView] = useState("");
-
   const renderMessageContent = () => {
     if (message.text) {
-      return <Text style={styles.messageText}>{message.text}</Text>;
+      return renderSearchHighlight(message.text);
     } else if (message.image) {
       return (
         <View style={{ borderRadius: 15, padding: 2 }}>
@@ -41,12 +48,68 @@ const ChatBubble = ({ message, isMyMessage }) => {
           </TouchableOpacity>
         </View>
       );
+    } else if (message.documentURL) {
+      return (
+        <TouchableOpacity
+          onPress={() => {
+            // Use Linking to open the document URL
+            Linking.openURL(message.documentURL);
+          }}
+          style={styles.documentButton}
+        >
+          <Feather
+            name="download"
+            size={20}
+            color="black"
+            style={styles.icon}
+          />
+          <Text style={styles.documentText}>Download Document</Text>
+        </TouchableOpacity>
+      );
     }
     return null;
   };
 
+  const getMessageTypeIndicator = () => {
+    if (message.text) {
+      return null; // Text message has no indicator
+    } else if (message.image) {
+      return <Feather name="image" size={20} color="#4CAF50" />;
+    } else if (message.documentURL) {
+      return <Feather name="file-text" size={20} color="#4CAF50" />;
+    }
+    return null;
+  };
+
+  const renderSearchHighlight = (text) => {
+    if (searchQuery && text.toLowerCase().includes(searchQuery.toLowerCase())) {
+      const parts = text.split(new RegExp(`(${searchQuery})`, "gi"));
+      return (
+        <Text>
+          {parts.map((part, index) => (
+            <Text
+              key={index}
+              style={
+                part.toLowerCase() === searchQuery.toLowerCase()
+                  ? { backgroundColor: "#FFFF00" } // Highlight the search term
+                  : {}
+              }
+            >
+              {part}
+            </Text>
+          ))}
+        </Text>
+      );
+    }
+    return <Text>{text}</Text>;
+  };
+
   return (
     <View style={[styles.container, bubbleStyle]}>
+      <View style={styles.messageTypeIndicator}>
+        {getMessageTypeIndicator()}
+      </View>
+
       {renderMessageContent()}
       <Text style={styles.timestamp}>
         {formatMessageTime(message.createdAt)}
@@ -54,6 +117,7 @@ const ChatBubble = ({ message, isMyMessage }) => {
     </View>
   );
 };
+
 const formatMessageTime = (time) => {
   const messageDate = new Date(time);
   const currentDate = new Date();
@@ -84,6 +148,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginVertical: 4,
+    position: "relative",
   },
   myMessage: {
     alignSelf: "flex-end",
@@ -109,6 +174,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: "right",
   },
+  documentButton: {
+    padding: 10,
+    borderRadius: 10,
+    maxWidth: 250,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  documentText: {
+    color: "black",
+    marginLeft: 5,
+  },
+  icon: {
+    paddingRight: 5,
+  },
+  messageTypeIndicator: {
+    position: "absolute",
+    bottom: 5,
+    left: 5,
+  },
 });
-
 export default ChatBubble;

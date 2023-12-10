@@ -7,6 +7,7 @@ import { View, FlatList, StyleSheet } from "react-native";
 import ChatBubble from "../components/chat-bubble"; // Import your custom ChatBubble component
 import ChatInput from "../components/chat-input"; // Import your custom ChatInput component
 import { useRoute } from "@react-navigation/native";
+import * as DocumentPicker from "expo-document-picker";
 
 import { auth, db } from "../firebase";
 import {
@@ -18,9 +19,10 @@ import {
   updateDoc,
 } from "@firebase/firestore";
 
-import { pickImage, uploadImage } from "../utils";
+import { pickImage, uploadDocument, uploadImage } from "../utils";
 import ImageView from "react-native-image-viewing";
 import { useGlobalContext } from "../context/context-wrapper";
+import ChatHeader from "../components/chat-header";
 
 const randomId = nanoid();
 
@@ -28,15 +30,18 @@ const ChatScreen = () => {
   const {
     theme: { colors },
   } = useGlobalContext();
+  const user = auth.currentUser;
+
   const [roomHash, setRoomHash] = useState("");
   const [messages, setMessages] = useState([]);
-
+  const [isWriting, setIsWriting] = useState(false);
+  const [someoneIsWriting, setSomeoneIsWriting] = useState(null);
   const { currentUser } = auth;
   const route = useRoute();
   const room = route.params.room;
   const selectedImage = route.params.image;
   const userB = route.params.user;
-
+  const [searchQuery, setSearchQuery] = useState("");
   const senderUser = currentUser.photoURL
     ? {
         name: currentUser.displayName,
@@ -106,14 +111,6 @@ const ChatScreen = () => {
     },
     [messages]
   );
-
-  async function onSend(messages = []) {
-    const writes = messages.map((m) => addDoc(roomMessagesRef, m));
-    const lastMessage = messages[messages.length - 1];
-    writes.push(updateDoc(roomRef, { lastMessage }));
-    await Promise.all(writes);
-  }
-
   async function sendImage(uri, roomPath) {
     const { url, fileName } = await uploadImage(
       uri,
@@ -126,37 +123,120 @@ const ChatScreen = () => {
       user: senderUser,
       image: url,
     };
-    const lastMessage = { ...message, text: "Image" };
+    const lastMessage = { ...message, text: "Image sent" };
     await Promise.all([
       addDoc(roomMessagesRef, message),
       updateDoc(roomRef, { lastMessage }),
     ]);
   }
+  const handleDocumentPicker = async () => {
+    try {
+      const document = await DocumentPicker.getDocumentAsync({
+        type: "application/pdf", // You can specify a specific file type here (e.g., application/pdf)
+        copyToCacheDirectory: false, // Set to true if you want to work with a copy of the document
+      });
+
+      if (!document.canceled) {
+        const { url, fileName } = await uploadDocument(
+          document.assets[0].uri,
+          "documents"
+        );
+        console.log(url, fileName);
+
+        const message = {
+          documentURL: url,
+          createdAt: new Date(),
+          _id: fileName,
+          text: "",
+          user: senderUser,
+        };
+
+        const lastMessage = { ...message, text: "Document sent" };
+        await Promise.all([
+          addDoc(roomMessagesRef, message),
+          updateDoc(roomRef, { lastMessage }),
+        ]);
+      }
+    } catch (error) {
+      console.error("Error picking document:", error);
+      // Handle error if needed
+    }
+  };
+
+  async function onSend(messages = []) {
+    const writes = messages.map((m) => addDoc(roomMessagesRef, m));
+    const lastMessage = messages[messages.length - 1];
+    writes.push(updateDoc(roomRef, { lastMessage }));
+    await Promise.all(writes);
+  }
 
   async function handlePhotoPicker() {
     const result = await pickImage();
-    if (!result.cancelled) {
-      await sendImage(result.uri);
+    if (!result.canceled) {
+      await sendImage(result.assets[0].uri);
     }
   }
+  useEffect(() => {
+    if (user) {
+      if (isWriting) {
+        updateDoc(roomRef, {
+          isWriting: user.uid,
+        });
+      } else {
+        updateDoc(roomRef, {
+          isWriting: null,
+        });
+      }
+    }
+  }, [isWriting]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(roomRef, (doc) => {
+      const { isWriting } = doc.data();
+      setSomeoneIsWriting(isWriting);
+      console.log(isWriting);
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <View style={styles.container}>
+      <ChatHeader searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
       <FlatList
-        data={messages}
+        data={
+          someoneIsWriting
+            ? currentUser.uid === someoneIsWriting
+              ? messages
+              : [
+                  {
+                    text: "typing...",
+                    createdAt: new Date(),
+                    _id: someoneIsWriting,
+                    user: {
+                      id: someoneIsWriting,
+                    },
+                  },
+                  ...messages,
+                ]
+            : messages
+        }
         keyExtractor={(item) => item._id}
         renderItem={({ item }) => (
           <ChatBubble
             message={item}
             isMyMessage={item.user._id === currentUser.uid}
+            searchQuery={searchQuery}
           />
         )}
         inverted // To display messages from bottom to top
       />
+
       <ChatInput
         onSend={onSend}
         userId={currentUser.uid}
         handlePhotoPicker={handlePhotoPicker}
+        setIsWriting={setIsWriting}
+        handleDocumentPicker={handleDocumentPicker}
       />
     </View>
   );
